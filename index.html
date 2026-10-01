@@ -130,6 +130,13 @@
             margin-bottom: 12px;
         }
 
+        .form-grid-time {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
         button {
             border: 0;
             border-radius: 11px;
@@ -175,6 +182,19 @@
             transform: translateY(-2px);
         }
 
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .entry-datetime {
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
+
         .entry-date {
             color: var(--accent);
             font-size: 13px;
@@ -183,8 +203,15 @@
             text-transform: uppercase;
         }
 
+        .entry-time {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
         .entry-title {
-            margin: 7px 0 12px;
+            margin: 0 0 12px;
             font-size: 24px;
         }
 
@@ -270,20 +297,20 @@
             <p>Deine Gedanken. Deine Einträge. Nur auf diesem Gerät.</p>
         </header>
 
-        <!-- Neuer Eintrag -->
         <section class="panel">
 
             <div class="form-grid">
-                <input
-                    type="date"
-                    id="date"
-                >
+                <input type="date" id="date">
 
                 <input
                     type="text"
                     id="title"
                     placeholder="Titel des Eintrags..."
                 >
+            </div>
+
+            <div class="form-grid-time">
+                <input type="time" id="time">
             </div>
 
             <textarea
@@ -297,8 +324,6 @@
 
         </section>
 
-
-        <!-- Suche -->
         <section class="panel">
 
             <input
@@ -313,19 +338,15 @@
 
         </section>
 
-
-        <!-- Einträge -->
         <main id="entries"></main>
 
     </div>
 
-    <!-- Sidebar für Scroll-Navigation -->
     <div class="sidebar">
         <div class="sidebar-thumb"></div>
     </div>
 
 </div>
-
 
 <script>
 
@@ -335,13 +356,14 @@
         localStorage.getItem(STORAGE_KEY)
     ) || [];
 
-
-    // Heutiges Datum automatisch auswählen
     document.getElementById("date").value =
         new Date().toISOString().split("T")[0];
 
+    const now = new Date();
+    document.getElementById("time").value =
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0');
 
-    // Sidebar-Navigation
     const sidebar = document.querySelector(".sidebar");
     const thumb = document.querySelector(".sidebar-thumb");
     let isDragging = false;
@@ -384,7 +406,6 @@
             return;
         }
 
-        const maxY = viewportHeight - 30;
         const thumbHeight = Math.max(30, (viewportHeight / containerHeight) * viewportHeight);
         const thumbY = (scrollPosition / (containerHeight - viewportHeight)) * (viewportHeight - thumbHeight);
 
@@ -392,180 +413,110 @@
         thumb.style.top = thumbY + "px";
     });
 
-    // Initiale Berechnung
     window.dispatchEvent(new Event("scroll"));
 
-
     function saveEntries() {
-
         localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(entries)
         );
-
     }
 
-
     function addEntry() {
-
-        const date =
-            document.getElementById("date").value;
-
-        const title =
-            document.getElementById("title").value.trim();
-
-        const content =
-            document.getElementById("content").value.trim();
-
+        const date = document.getElementById("date").value;
+        const time = document.getElementById("time").value || "00:00";
+        const title = document.getElementById("title").value.trim();
+        const content = document.getElementById("content").value.trim();
 
         if (!date || !title || !content) {
-
             alert("Bitte Datum, Titel und Inhalt ausfüllen.");
-
             return;
         }
 
-
         const entry = {
-
             id: Date.now(),
-
             date: date,
-
+            time: time,
             title: title,
-
             content: content
-
         };
 
-
         entries.push(entry);
-
         saveEntries();
 
-
-        // Felder zurücksetzen
         document.getElementById("title").value = "";
         document.getElementById("content").value = "";
 
         document.getElementById("date").value =
             new Date().toISOString().split("T")[0];
 
+        const nowReset = new Date();
+        document.getElementById("time").value =
+            String(nowReset.getHours()).padStart(2, '0') + ':' +
+            String(nowReset.getMinutes()).padStart(2, '0');
 
         renderEntries();
-
     }
 
-
     function deleteEntry(id) {
-
         if (!confirm("Diesen Eintrag wirklich löschen?")) {
             return;
         }
 
-
-        entries = entries.filter(
-            entry => entry.id !== id
-        );
-
+        entries = entries.filter(entry => entry.id !== id);
         saveEntries();
-
         renderEntries();
-
     }
-
 
     function formatDate(dateString) {
-
-        const date = new Date(
-            dateString + "T00:00:00"
-        );
-
-        return date.toLocaleDateString(
-            "de-DE",
-            {
-                weekday: "long",
-                day: "2-digit",
-                month: "long",
-                year: "numeric"
-            }
-        );
-
+        const date = new Date(dateString + "T00:00:00");
+        return date.toLocaleDateString("de-DE", {
+            weekday: "long",
+            day: "2-digit",
+            month: "long",
+            year: "numeric"
+        });
     }
 
+    function formatTime(timeString) {
+        if (!timeString) return "";
+        const [hours, minutes] = timeString.split(":");
+        return `${hours}:${minutes} Uhr`;
+    }
 
     function renderEntries() {
+        const container = document.getElementById("entries");
+        const counter = document.getElementById("counter");
 
-        const container =
-            document.getElementById("entries");
+        const search = document.getElementById("search")
+            .value
+            .trim()
+            .toLowerCase();
 
-        const counter =
-            document.getElementById("counter");
-
-        const search =
-            document.getElementById("search")
-                .value
-                .trim()
-                .toLowerCase();
-
-
-        // Suche
         let filtered = entries.filter(entry => {
-
-            if (!search) {
-                return true;
-            }
+            if (!search) return true;
 
             return (
-
-                entry.title
-                    .toLowerCase()
-                    .includes(search)
-
-                ||
-
-                entry.date
-                    .toLowerCase()
-                    .includes(search)
-
-                ||
-
-                formatDate(entry.date)
-                    .toLowerCase()
-                    .includes(search)
-
-                ||
-
-                entry.content
-                    .toLowerCase()
-                    .includes(search)
-
+                entry.title.toLowerCase().includes(search) ||
+                entry.date.toLowerCase().includes(search) ||
+                formatDate(entry.date).toLowerCase().includes(search) ||
+                entry.time.toLowerCase().includes(search) ||
+                entry.content.toLowerCase().includes(search)
             );
-
         });
 
-
-        // Neueste zuerst
-        filtered.sort(
-            (a, b) =>
-                new Date(b.date) -
-                new Date(a.date)
-        );
-
+        filtered.sort((a, b) => {
+            const dateA = new Date(a.date + "T" + (a.time || "00:00"));
+            const dateB = new Date(b.date + "T" + (b.time || "00:00"));
+            return dateB - dateA;
+        });
 
         counter.textContent =
-            `${filtered.length} ${
-                filtered.length === 1
-                    ? "Eintrag"
-                    : "Einträge"
-            }`;
-
+            `${filtered.length} ${filtered.length === 1 ? "Eintrag" : "Einträge"}`;
 
         container.innerHTML = "";
 
-
         if (filtered.length === 0) {
-
             container.innerHTML = `
                 <div class="panel empty">
                     ${
@@ -575,23 +526,23 @@
                     }
                 </div>
             `;
-
             return;
         }
 
-
         filtered.forEach(entry => {
-
-            const article =
-                document.createElement("article");
-
+            const article = document.createElement("article");
             article.className = "entry";
 
-
             article.innerHTML = `
-
-                <div class="entry-date">
-                    ${escapeHTML(formatDate(entry.date))}
+                <div class="entry-header">
+                    <div class="entry-datetime">
+                        <div class="entry-date">
+                            ${escapeHTML(formatDate(entry.date))}
+                        </div>
+                        <div class="entry-time">
+                            ${escapeHTML(formatTime(entry.time))}
+                        </div>
+                    </div>
                 </div>
 
                 <h2 class="entry-title">
@@ -609,33 +560,20 @@
                 >
                     🗑
                 </button>
-
             `;
 
-
             container.appendChild(article);
-
         });
 
-        // Scrollbar nach dem Rendern aktualisieren
         window.dispatchEvent(new Event("scroll"));
-
     }
 
-
-    // Schutz gegen HTML/JavaScript im Tagebuchtext
     function escapeHTML(text) {
-
         const div = document.createElement("div");
-
         div.textContent = text;
-
         return div.innerHTML;
-
     }
 
-
-    // Start
     renderEntries();
 
 </script>
