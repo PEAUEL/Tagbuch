@@ -1,0 +1,531 @@
+```html
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mein Tagebuch</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0b0d12;
+            --panel: #131720;
+            --panel-light: #191e29;
+            --border: #292f3d;
+            --text: #f1f3f7;
+            --muted: #8e96a6;
+            --accent: #7c5cff;
+            --accent-hover: #947aff;
+            --danger: #ff5c6c;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top, #1b1730 0%, transparent 35%),
+                var(--bg);
+            color: var(--text);
+        }
+
+        .container {
+            width: min(1000px, 92%);
+            margin: auto;
+            padding: 40px 0 70px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        header h1 {
+            font-size: 42px;
+            margin: 0;
+            letter-spacing: -1px;
+        }
+
+        header p {
+            color: var(--muted);
+            margin-top: 8px;
+        }
+
+        .panel {
+            background: rgba(19, 23, 32, 0.92);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 24px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            background: var(--panel-light);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 13px 15px;
+            font: inherit;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.15);
+        }
+
+        textarea {
+            min-height: 180px;
+            resize: vertical;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 11px;
+            padding: 12px 18px;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .primary {
+            background: var(--accent);
+            color: white;
+            margin-top: 12px;
+        }
+
+        .primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .search {
+            font-size: 16px;
+            padding: 15px 18px;
+        }
+
+        .entry {
+            position: relative;
+            background: linear-gradient(
+                145deg,
+                rgba(25, 30, 41, 0.95),
+                rgba(18, 22, 30, 0.95)
+            );
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 23px;
+            margin-bottom: 16px;
+            transition: 0.2s;
+        }
+
+        .entry:hover {
+            border-color: #3b4253;
+            transform: translateY(-2px);
+        }
+
+        .entry-date {
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .entry-title {
+            margin: 7px 0 12px;
+            font-size: 24px;
+        }
+
+        .entry-content {
+            color: #c9ced8;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .delete {
+            position: absolute;
+            right: 18px;
+            top: 18px;
+            background: transparent;
+            color: var(--muted);
+            padding: 6px 9px;
+        }
+
+        .delete:hover {
+            color: var(--danger);
+            background: rgba(255, 92, 108, 0.1);
+        }
+
+        .empty {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--muted);
+        }
+
+        .counter {
+            color: var(--muted);
+            font-size: 14px;
+            margin: 15px 2px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding-top: 25px;
+            }
+
+            header h1 {
+                font-size: 34px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel {
+                padding: 16px;
+            }
+
+            .entry {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>📖 Mein Tagebuch</h1>
+        <p>Deine Gedanken. Deine Einträge. Nur auf diesem Gerät.</p>
+    </header>
+
+    <!-- Neuer Eintrag -->
+    <section class="panel">
+
+        <div class="form-grid">
+            <input
+                type="date"
+                id="date"
+            >
+
+            <input
+                type="text"
+                id="title"
+                placeholder="Titel des Eintrags..."
+            >
+        </div>
+
+        <textarea
+            id="content"
+            placeholder="Was möchtest du heute festhalten?"
+        ></textarea>
+
+        <button class="primary" onclick="addEntry()">
+            Eintrag speichern
+        </button>
+
+    </section>
+
+
+    <!-- Suche -->
+    <section class="panel">
+
+        <input
+            class="search"
+            type="search"
+            id="search"
+            placeholder="🔎 Titel, Datum oder Inhalt durchsuchen..."
+            oninput="renderEntries()"
+        >
+
+        <div class="counter" id="counter"></div>
+
+    </section>
+
+
+    <!-- Einträge -->
+    <main id="entries"></main>
+
+</div>
+
+
+<script>
+
+    const STORAGE_KEY = "mein_tagebuch_eintraege";
+
+    let entries = JSON.parse(
+        localStorage.getItem(STORAGE_KEY)
+    ) || [];
+
+
+    // Heutiges Datum automatisch auswählen
+    document.getElementById("date").value =
+        new Date().toISOString().split("T")[0];
+
+
+    function saveEntries() {
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(entries)
+        );
+
+    }
+
+
+    function addEntry() {
+
+        const date =
+            document.getElementById("date").value;
+
+        const title =
+            document.getElementById("title").value.trim();
+
+        const content =
+            document.getElementById("content").value.trim();
+
+
+        if (!date || !title || !content) {
+
+            alert("Bitte Datum, Titel und Inhalt ausfüllen.");
+
+            return;
+        }
+
+
+        const entry = {
+
+            id: Date.now(),
+
+            date: date,
+
+            title: title,
+
+            content: content
+
+        };
+
+
+        entries.push(entry);
+
+        saveEntries();
+
+
+        // Felder zurücksetzen
+        document.getElementById("title").value = "";
+        document.getElementById("content").value = "";
+
+        document.getElementById("date").value =
+            new Date().toISOString().split("T")[0];
+
+
+        renderEntries();
+
+    }
+
+
+    function deleteEntry(id) {
+
+        if (!confirm("Diesen Eintrag wirklich löschen?")) {
+            return;
+        }
+
+
+        entries = entries.filter(
+            entry => entry.id !== id
+        );
+
+        saveEntries();
+
+        renderEntries();
+
+    }
+
+
+    function formatDate(dateString) {
+
+        const date = new Date(
+            dateString + "T00:00:00"
+        );
+
+        return date.toLocaleDateString(
+            "de-DE",
+            {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+                year: "numeric"
+            }
+        );
+
+    }
+
+
+    function renderEntries() {
+
+        const container =
+            document.getElementById("entries");
+
+        const counter =
+            document.getElementById("counter");
+
+        const search =
+            document.getElementById("search")
+                .value
+                .trim()
+                .toLowerCase();
+
+
+        // Suche
+        let filtered = entries.filter(entry => {
+
+            if (!search) {
+                return true;
+            }
+
+            return (
+
+                entry.title
+                    .toLowerCase()
+                    .includes(search)
+
+                ||
+
+                entry.date
+                    .toLowerCase()
+                    .includes(search)
+
+                ||
+
+                formatDate(entry.date)
+                    .toLowerCase()
+                    .includes(search)
+
+                ||
+
+                entry.content
+                    .toLowerCase()
+                    .includes(search)
+
+            );
+
+        });
+
+
+        // Neueste zuerst
+        filtered.sort(
+            (a, b) =>
+                new Date(b.date) -
+                new Date(a.date)
+        );
+
+
+        counter.textContent =
+            `${filtered.length} ${
+                filtered.length === 1
+                    ? "Eintrag"
+                    : "Einträge"
+            }`;
+
+
+        container.innerHTML = "";
+
+
+        if (filtered.length === 0) {
+
+            container.innerHTML = `
+                <div class="panel empty">
+                    ${
+                        search
+                            ? "Keine passenden Einträge gefunden."
+                            : "Noch keine Tagebucheinträge vorhanden."
+                    }
+                </div>
+            `;
+
+            return;
+        }
+
+
+        filtered.forEach(entry => {
+
+            const article =
+                document.createElement("article");
+
+            article.className = "entry";
+
+
+            article.innerHTML = `
+
+                <div class="entry-date">
+                    ${escapeHTML(formatDate(entry.date))}
+                </div>
+
+                <h2 class="entry-title">
+                    ${escapeHTML(entry.title)}
+                </h2>
+
+                <div class="entry-content">
+                    ${escapeHTML(entry.content)}
+                </div>
+
+                <button
+                    class="delete"
+                    onclick="deleteEntry(${entry.id})"
+                    title="Eintrag löschen"
+                >
+                    🗑
+                </button>
+
+            `;
+
+
+            container.appendChild(article);
+
+        });
+
+    }
+
+
+    // Schutz gegen HTML/JavaScript im Tagebuchtext
+    function escapeHTML(text) {
+
+        const div = document.createElement("div");
+
+        div.textContent = text;
+
+        return div.innerHTML;
+
+    }
+
+
+    // Start
+    renderEntries();
+
+</script>
+
+</body>
+</html>
+```
