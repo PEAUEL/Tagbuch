@@ -34,10 +34,44 @@
             color: var(--text);
         }
 
+        .main-wrapper {
+            display: flex;
+            gap: 15px;
+        }
+
         .container {
             width: min(1000px, 92%);
             margin: auto;
             padding: 40px 0 70px;
+            flex: 1;
+        }
+
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 8px;
+            height: 100vh;
+            background: rgba(41, 47, 61, 0.3);
+            border-left: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .sidebar-thumb {
+            position: absolute;
+            left: 0;
+            width: 8px;
+            background: linear-gradient(180deg, var(--accent), var(--accent-hover));
+            border-radius: 4px;
+            cursor: grab;
+            transition: width 0.2s;
+        }
+
+        .sidebar-thumb:hover,
+        .sidebar-thumb.active {
+            width: 12px;
+            background: linear-gradient(180deg, var(--accent-hover), #9b87ff);
+            left: -2px;
         }
 
         header {
@@ -207,65 +241,88 @@
             .entry {
                 padding: 18px;
             }
+
+            .sidebar {
+                width: 6px;
+            }
+
+            .sidebar-thumb {
+                width: 6px;
+            }
+
+            .sidebar-thumb:hover,
+            .sidebar-thumb.active {
+                width: 10px;
+                left: -2px;
+            }
         }
     </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="main-wrapper">
 
-    <header>
-        <h1>📖 Mein Tagebuch</h1>
-        <p>Deine Gedanken. Deine Einträge. Nur auf diesem Gerät.</p>
-    </header>
+    <div class="container">
 
-    <!-- Neuer Eintrag -->
-    <section class="panel">
+        <header>
+            <h1>📖 Mein Tagebuch</h1>
+            <p>Deine Gedanken. Deine Einträge. Nur auf diesem Gerät.</p>
+        </header>
 
-        <div class="form-grid">
+        <!-- Neuer Eintrag -->
+        <section class="panel">
+
+            <div class="form-grid">
+                <input
+                    type="date"
+                    id="date"
+                >
+
+                <input
+                    type="text"
+                    id="title"
+                    placeholder="Titel des Eintrags..."
+                >
+            </div>
+
+            <textarea
+                id="content"
+                placeholder="Was möchtest du heute festhalten?"
+            ></textarea>
+
+            <button class="primary" onclick="addEntry()">
+                Eintrag speichern
+            </button>
+
+        </section>
+
+
+        <!-- Suche -->
+        <section class="panel">
+
             <input
-                type="date"
-                id="date"
+                class="search"
+                type="search"
+                id="search"
+                placeholder="🔎 Titel, Datum oder Inhalt durchsuchen..."
+                oninput="renderEntries()"
             >
 
-            <input
-                type="text"
-                id="title"
-                placeholder="Titel des Eintrags..."
-            >
-        </div>
+            <div class="counter" id="counter"></div>
 
-        <textarea
-            id="content"
-            placeholder="Was möchtest du heute festhalten?"
-        ></textarea>
-
-        <button class="primary" onclick="addEntry()">
-            Eintrag speichern
-        </button>
-
-    </section>
+        </section>
 
 
-    <!-- Suche -->
-    <section class="panel">
+        <!-- Einträge -->
+        <main id="entries"></main>
 
-        <input
-            class="search"
-            type="search"
-            id="search"
-            placeholder="🔎 Titel, Datum oder Inhalt durchsuchen..."
-            oninput="renderEntries()"
-        >
+    </div>
 
-        <div class="counter" id="counter"></div>
-
-    </section>
-
-
-    <!-- Einträge -->
-    <main id="entries"></main>
+    <!-- Sidebar für Scroll-Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-thumb"></div>
+    </div>
 
 </div>
 
@@ -282,6 +339,61 @@
     // Heutiges Datum automatisch auswählen
     document.getElementById("date").value =
         new Date().toISOString().split("T")[0];
+
+
+    // Sidebar-Navigation
+    const sidebar = document.querySelector(".sidebar");
+    const thumb = document.querySelector(".sidebar-thumb");
+    let isDragging = false;
+
+    thumb.addEventListener("mousedown", () => {
+        isDragging = true;
+        thumb.classList.add("active");
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        thumb.classList.remove("active");
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const containerHeight = document.documentElement.scrollHeight;
+        const viewportHeight = window.innerHeight;
+
+        if (containerHeight <= viewportHeight) return;
+
+        const maxY = viewportHeight - thumb.offsetHeight;
+        const thumbY = Math.max(0, Math.min(maxY, e.clientY - sidebarRect.top));
+
+        const scrollPercentage = thumbY / maxY;
+        const scrollPosition = scrollPercentage * (containerHeight - viewportHeight);
+
+        window.scrollTo(0, scrollPosition);
+    });
+
+    window.addEventListener("scroll", () => {
+        const containerHeight = document.documentElement.scrollHeight;
+        const viewportHeight = window.innerHeight;
+        const scrollPosition = window.scrollY;
+
+        if (containerHeight <= viewportHeight) {
+            thumb.style.height = "100%";
+            return;
+        }
+
+        const maxY = viewportHeight - 30;
+        const thumbHeight = Math.max(30, (viewportHeight / containerHeight) * viewportHeight);
+        const thumbY = (scrollPosition / (containerHeight - viewportHeight)) * (viewportHeight - thumbHeight);
+
+        thumb.style.height = thumbHeight + "px";
+        thumb.style.top = thumbY + "px";
+    });
+
+    // Initiale Berechnung
+    window.dispatchEvent(new Event("scroll"));
 
 
     function saveEntries() {
@@ -504,6 +616,9 @@
             container.appendChild(article);
 
         });
+
+        // Scrollbar nach dem Rendern aktualisieren
+        window.dispatchEvent(new Event("scroll"));
 
     }
 
